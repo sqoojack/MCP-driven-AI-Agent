@@ -1,0 +1,2 @@
+[server]
+maxUploadSize = 500  # 設定最大上傳為 500MB

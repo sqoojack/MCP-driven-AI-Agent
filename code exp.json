@@ -1,0 +1,569 @@
+{
+  "name": "code exp",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "deepseek-r1:14b",
+        "options": {
+          "temperature": 0.2,
+          "topP": 0.5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        320
+      ],
+      "id": "8dba06b6-d36a-40c8-bc66-0d137dbc0216",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "piuQXAzwd4n6RugQ",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=檔案名: {{ $json.filename }}\n程式碼如下：\n{{ $json.content }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "你是一位資深 Python 工程師，請根據以下程式碼撰寫一份結構化摘要，格式為 Markdown，內容需**明確包含以下欄位名稱**：\n\n1. **檔案用途**：說明此 Python 檔案的主要用途或執行目的。\n2. **主要模組 / 函式說明**：列出主要模組與函式，包含名稱與功能說明（如有類別也請一併列出）。\n3. **特殊處理或錯誤處理邏輯**（如有）：例如檔案處理、例外處理、與外部 API 互動等。\n\n請使用條列或小節方式，保持清晰有條理，並以繁體中文撰寫。\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1328,
+        176
+      ],
+      "id": "b10adc76-9547-4784-b72f-9c31d7a9944a",
+      "name": "Basic LLM Chain1"
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1408,
+        -128
+      ],
+      "id": "0b9a8275-826e-40a4-b111-244590a50ee9",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/files/code_exp.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        -128
+      ],
+      "id": "cbe523bc-4c92-47dc-8633-d6867357ffd9",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "command": "python /code/json_to_pptx.py"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2032,
+        -80
+      ],
+      "id": "fa17c814-83be-4898-95dd-354ed12fe0c5",
+      "name": "Run create_ppt.py"
+    },
+    {
+      "parameters": {
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "上傳程式碼",
+              "fieldType": "file",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 1,
+      "position": [
+        704,
+        -32
+      ],
+      "id": "524e1d0e-a83e-42eb-8b41-841ec709704e",
+      "name": "file_form",
+      "webhookId": "84214b74-c310-4e46-b4f6-590902326bf9"
+    },
+    {
+      "parameters": {
+        "model": "deepseek-r1:14b",
+        "options": {
+          "temperature": 0,
+          "topP": 0.5
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1440,
+        -352
+      ],
+      "id": "8b16ec06-c679-4201-bae9-1a49b6915c31",
+      "name": "Ollama Chat Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "piuQXAzwd4n6RugQ",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=以下是多個 Python 檔案與其用途描述:{{ $json.prompt }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "你將收到多個 Python 檔案的清單與它們的用途說明，請你幫我做以下分析並輸出為 JSON：\n\n1. 說明每個檔案在整體專案中的功能定位與角色。\n2. 推測檔案之間的依賴關係或執行順序（例如初始化邏輯、互動模組等）。\n3. 提出一個「建議介紹順序」，用來幫助新使用者從最重要的檔案開始認識整個專案。\n4. 幫我為整體專案撰寫一句「不超過 50 字的簡介」，讓人快速了解系統的功能與目標。\n5. 如有可能，請提供一份專案的高層級架構圖（用簡單的文字方式表示即可）。\n\n請將結果輸出為一個 JSON 格式，包含以下欄位：\n\n```json\n{\n  \"project_name\": str\n  \"suggested_reading_order\": [\"xxx.py\", \"yyy.py\", \"zzz.py\"],\n  \"project_summary\": \"不超過 50 字的簡介\",\n  \"architecture_diagram\": \"以文字表達的系統關係架構\"\n}\n"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        1440,
+        -512
+      ],
+      "id": "98be7552-e8b3-477d-a001-82270e09b18a",
+      "name": "LLM2",
+      "alwaysOutputData": true,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1056,
+        -32
+      ],
+      "id": "93c437b2-cb41-4243-b75f-bb5dde5527d1",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "formTitle": "程式碼解釋工具",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "主題"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        544,
+        -32
+      ],
+      "id": "d0c01d09-8fc8-4a42-92d7-9b40d96cd0f7",
+      "name": "On form submission",
+      "webhookId": "7abbed39-7c39-4768-b91c-e6f491278838"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = [];\n\nfor (const executionItem of $input.all()) {\n  const binaryData = executionItem.binary;\n\n  for (const key in binaryData) {\n    const file = binaryData[key];\n    allItems.push({\n      json: {\n        filename: file.fileName,\n        content: Buffer.from(file.data, 'base64').toString('utf-8'),\n        originalJson: executionItem.json,  // 如果想保留原本json的其他欄位，可以放在這\n      }\n    });\n  }\n}\n\nreturn allItems;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        -32
+      ],
+      "id": "3de397a2-af33-45aa-bfcb-52d9c1be73c1",
+      "name": "split file",
+      "notes": "讓loop可以執行"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  const originalText = item.json.text;\n\n  // 使用正則表達式移除 <think>...</think>，支援多行\n  const cleanedText = originalText.replace(/<think>[\\s\\S]*?<\\/think>/g, '');\n\n  // 存回原本的欄位或新增欄位\n  item.json.text = cleanedText;\n\n  // 你也可以加上一個標記欄位\n  // item.json.cleaned = true;\n}\n\nreturn $input.all();\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1696,
+        176
+      ],
+      "id": "d44e301d-3795-404d-af48-b1907ac7698c",
+      "name": "remove think"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 假設第一個 item 為 markdown 描述文字，第二個為檔案與 context\nconst descriptionItem = $input.first();\nconst fileItem = $input.last();\n\n// 取得 text（從 json.text 或 json.content 嘗試）\nconst markdown = descriptionItem.json.text || descriptionItem.json.content || \"\";\n\n// 取得 filename\nconst filename = fileItem.json.filename || \"unknown.py\";\n\n// 擷取「## 1. 檔案用途」段落內容\nconst usageMatch = markdown.match(/##\\s*1\\.\\s*檔案用途\\s*\\n+([\\s\\S]*?)(?=\\n##\\s*\\d+\\.)/);\nconst usage = usageMatch ? usageMatch[1].trim() : \"未找到檔案用途\";\n\n// 取得 context 內容（通常是 code）\nconst context = fileItem.json.content || \"\";\n\n// 擷取所有 from ... import ... 的語句（跨行支援）\nconst importMatches = [...context.matchAll(/^from\\s+.+?\\s+import\\s+.+$/gm)];\nconst import_fun = importMatches.map(m => m[0]).join('\\n');\n\nreturn [\n  {\n    json: {\n      filename,\n      usage,\n      import_fun,\n      markdown\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        256
+      ],
+      "id": "87cee666-3e10-48fb-970d-76f0792595d7",
+      "name": "get usage"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1920,
+        256
+      ],
+      "id": "093fb514-2d4e-4792-b8b3-fd23f8956c20",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "\nconst results = [];\n\nfor (const item of $input.all()) {\n  const text = item.json.text;\n\n  // 1. 移除 <think> 標籤與其中內容\n  const cleaned = text.replace(/<think>[\\s\\S]*?<\\/think>/g, '');\n\n  // 2. 擷取 JSON 區塊\n  const match = cleaned.match(/```json\\s*([\\s\\S]*?)\\s*```/);\n  if (match) {\n    try {\n      const parsed = JSON.parse(match[1]);\n      results.push(parsed);\n    } catch (e) {\n      throw new Error(\"JSON 解析失敗: \" + e.message);\n    }\n  } else {\n    throw new Error(\"找不到 JSON 區塊\");\n  }\n}\n\n// n8n 回傳\nreturn results.map(r => ({ json: r }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        -512
+      ],
+      "id": "108deb27-07fa-4da8-a8b1-1b1bc2af2eee",
+      "name": "remove think1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 取出 data 陣列\nconst data = $input.all();\n\n// 組合所有檔案的 filename + usage\nconst fileUsages = data.map(item => {\n  const filename = item.filename || 'unknown.py';\n  const usage = item.usage || '未提供用途';\n  const import_fun = item.import_fun || '無';\n  return `檔案名稱：${filename}\\n用途說明：\\n${usage}\\n引用函示:${import_fun}`;\n});\n\nreturn [\n  {\n    json: {\n      prompt: fileUsages.join('\\n\\n---\\n\\n')\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        -352
+      ],
+      "id": "e0d5bba6-eab0-4737-b80e-4ee9ecd84a95",
+      "name": "make prompt"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/files/code_exp.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        864,
+        -496
+      ],
+      "id": "5f6fc48e-fef6-41fb-84ca-6b2718a75b9f",
+      "name": "Read/Write Files from Disk1"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=/files/code_arch.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2112,
+        -512
+      ],
+      "id": "5e7e0416-bdf0-4d63-8de6-a2e4d904f5f5",
+      "name": "Read/Write Files from Disk2"
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1952,
+        -512
+      ],
+      "id": "a0168175-1f9d-401b-baa9-dc6af7e0eb19",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1040,
+        -496
+      ],
+      "id": "2cebb3ad-a2c7-4a3f-ab75-74d99de5980f",
+      "name": "Extract from File"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 取得原始輸入資料\nconst outer = $input.first().json;\n\n// 從 data.data 中提取每個檔案的資訊\nconst rawItems = outer.data || [];\n\n// 檔案總數\nconst totalCount = rawItems.length;\n\nconst prompts = rawItems.map(entry => {\n  const filename = entry.filename || 'unknown.py';\n  const usage = entry.usage || '未提供用途';\n  const import_fun = entry.import_fun || '無';\n\n  return `檔案名稱：${filename}\\n用途說明：\\n${usage}\\n引用函示：${import_fun}`;\n});\n\n// 合併為一段 prompt，最前面加上總檔案數\nreturn [\n  {\n    json: {\n      prompt: `總共有 ${totalCount} 個檔案\\n\\n` + prompts.join('\\n\\n---\\n\\n')\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        -544
+      ],
+      "id": "b762fc56-2f23-4b41-8410-33c264ab827a",
+      "name": "make prompt2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain1": {
+      "main": [
+        [
+          {
+            "node": "remove think",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        []
+      ]
+    },
+    "file_form": {
+      "main": [
+        [
+          {
+            "node": "split file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "LLM2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM2": {
+      "main": [
+        [
+          {
+            "node": "remove think1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Basic LLM Chain1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "file_form",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split file": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "remove think": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get usage": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "get usage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "remove think1": {
+      "main": [
+        [
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "make prompt": {
+      "main": [
+        []
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Extract from File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from File": {
+      "main": [
+        [
+          {
+            "node": "make prompt2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "make prompt2": {
+      "main": [
+        [
+          {
+            "node": "LLM2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2350658c-2dff-4221-9662-56b817ffac6b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5baf8c21ccebc68b7b5b4877b1fddd662352b841e70489c9ad9d6d6e4d3e173c"
+  },
+  "id": "PWsOQsAs6E6d59sX",
+  "tags": []
+}
