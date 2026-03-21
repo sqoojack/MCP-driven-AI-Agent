@@ -10,7 +10,7 @@ from pptx.enum.text import PP_ALIGN
 from math import cos, sin, pi
 from Set_Text import TextRunFactory
 from utils import textwrap, requests
-from config import ollama_url, used_model
+from config import ollama_url  # 移除 used_model
 
 
 
@@ -91,7 +91,6 @@ def draw_connectors(slide, nodes, shapes, layout_key):
                 start_y = int(start_center_y)
                 end_x = int(end_right_x)
                 end_y = int(end_center_y)
-                #print(node_id, nxt_id, "左")
 
             # 條件 3：A 在 B 左上方，且 B 左邊 > A 中心（代表 B 稍往右偏）
             elif dx > 0 and dy > 0 and end_left_x > start_center_x:
@@ -120,7 +119,6 @@ def draw_connectors(slide, nodes, shapes, layout_key):
                 start_y = int(start_bottom_y)
                 end_x = int(end_right_x)
                 end_y = int(end_center_y)
-                #print(node_id, nxt_id, "左下")
                 add_l_connector(slide, [start_x, start_y], [start_x, end_y], [end_x, end_y])
                 continue
             # 條件 7：A 在 B 右下方
@@ -130,7 +128,6 @@ def draw_connectors(slide, nodes, shapes, layout_key):
                 start_y = int(start_top_y)
                 end_x = int(end_right_x)
                 end_y = int(end_center_y)
-                #print(node_id, nxt_id, "左上")
                 add_l_connector(slide, [start_x, start_y], [start_x, end_y], [end_x, end_y])
                 continue
             else:
@@ -318,7 +315,8 @@ def detect_layout_types(nodes):
         return list(node.get("layouts", {}).keys())[:2]
     return []
 
-def create_node(summary_text):
+# 修正：加入 model 與 temperature 參數
+def create_node(summary_text, model="gpt-oss:20b", temperature=0.7):
     prompt = textwrap.dedent(f"""
     請根據以下的格式，萃取出其中的主要流程或架構，並將其拆解為結構化的節點信息。每個節點應該包含以下欄位：
     - **id**: 節點的唯一識別字串，這將是該節點的顯示文字（不重複，適當時可以使用中文）。
@@ -351,25 +349,28 @@ def create_node(summary_text):
     {summary_text}
     """)
     
+    # 修改：透過 payload 傳遞動態的 model 與 temperature
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        "options": {
+            "temperature": temperature
+        }
+    }
+    
     response = requests.post(
         f"{ollama_url}/api/generate",
-        json={"model": used_model, "prompt": prompt, "stream": False}
+        json=payload
     )
 
-    # print(f"原始建造node的回應: {response.text}")     # debugging line
-
     if response.status_code == 200:
-        # If the request is successful, parse the response
         node_data = response.json().get("response", "")
-        
-        # Remove the ```json\n``` and closing ``` part
         if node_data:
             clean_node_data = node_data.replace("```json\n", "").replace("```", "").strip()
-            
-            # Now try to parse the clean JSON data
             try:
                 nodes = json.loads(clean_node_data)
-                return nodes  # Return the extracted nodes as JSON
+                return nodes
             except json.JSONDecodeError:
                 print("Error: Failed to decode JSON from cleaned response.")
                 return None
