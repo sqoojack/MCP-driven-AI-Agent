@@ -1,48 +1,70 @@
 # Code/mcp_server.py
-from mcp.server.fastmcp import FastMCP
 import os
-# 載入你原有的生成邏輯模組
-# 假設你的 create_ppt.py 中有一個主函數 generate_presentation(data)
-from create_ppt import generate_presentation 
+import json
+from dotenv import load_dotenv
+from mcp.server.fastmcp import FastMCP
+
+# 載入實際的生成邏輯模組
+from create_ppt import generate_report, generate_ppt_from_report
+from ppt_draw import create_node, generate_diagram_to_ppt  # 新增匯入繪圖模組
 from aws_utils import AWSManager
 
 # 初始化 MCP 伺服器
 mcp = FastMCP("PPT_Generator_Agent")
 
-# AWS S3 儲存桶名稱 (需替換為你實際的 Bucket)
-AWS_BUCKET = "your-ppt-agent-bucket"
-aws_manager = AWSManager(bucket_name=AWS_BUCKET)
+# 初始化 AWS 管理器
+aws_handler = AWSManager()
 
 @mcp.tool()
-def create_ppt_from_text(topic: str, content: str, template_type: str = "default") -> str:
+def create_ppt_from_text(
+    topic: str, 
+    content: str, 
+    num_pages: int = 5, 
+    level: str = "中階者", 
+    language: str = "繁體中文",
+    model_name: str = "gpt-oss:20b",
+    temperature: float = 0.7
+) -> str:
     """
-    (MCP Tool) 根據提供的主題與內容生成 PowerPoint 簡報，並回傳下載連結
-    
-    Args:
-        topic: 簡報主題
-        content: 簡報大綱與詳細內容
-        template_type: 佈景主題風格
+    (MCP Tool) 根據提供的主題與內容生成 PowerPoint 簡報（包含節點圖），並回傳 AWS 下載連結。
     """
     try:
-        # 1. 呼叫你原有的程式碼邏輯生成 PPT
-        # 這裡需對應你 create_ppt.py 實際的 API 呼叫方式
+        # 處理輸出的檔案路徑
         output_filename = f"{topic.replace(' ', '_')}.pptx"
+        os.makedirs("Output", exist_ok=True)
         local_output_path = os.path.join("Output", output_filename)
         
-        # 假設 generate_presentation 是你的核心生成函數
-        generate_presentation(topic=topic, content=content, template=template_type, output_path=local_output_path)
+        structure_json = generate_report(
+            all_texts=[content],
+            st_status=None,  
+            num_pages=num_pages,
+            level=level,
+            language=language,
+            model=model_name,  # 修正：使用傳入的 model_name
+            temperature=temperature
+        )
         
-        # 2. 將產生的 PPT 上傳至 AWS S3
-        aws_manager.upload_file(local_output_path, output_filename)
+        generate_ppt_from_report(structure_json, local_output_path)
         
-        # 3. 取得下載連結
-        download_url = aws_manager.generate_presigned_url(output_filename)
+        nodes = create_node(
+            json.dumps(structure_json, ensure_ascii=False),
+            model=model_name, 
+            temperature=0.7
+        )
+        generate_diagram_to_ppt(local_output_path, None, nodes)
         
-        return f"簡報生成成功！\n主題: {topic}\n下載連結: {download_url} (連結 1 小時內有效)"
+        s3_key = f"generated_ppt/{output_filename}"
+        is_success = aws_handler.upload_file(local_output_path, s3_key)
+        
+        if not is_success:
+            return "錯誤：上傳 AWS S3 失敗，請檢查 .env 的金鑰與連線狀態。"
+        
+        download_url = aws_handler.get_download_url(s3_key)
+        
+        return f"簡報與圖表生成成功！\n主題: {topic}\n總頁數: {len(structure_json.get('slides', []))}\n下載連結: {download_url}\n(連結 1 小時內有效)"
         
     except Exception as e:
-        return f"生成簡報時發生錯誤: {str(e)}"
+        return f"生成簡報時發生系統錯誤: {str(e)}"
 
 if __name__ == "__main__":
-    # 啟動 MCP 標準輸入輸出伺服器，讓外部 Agent 可以連接
-    mcp.run_stdio_async()
+    mcp.run()

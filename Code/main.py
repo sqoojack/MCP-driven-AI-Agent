@@ -1,12 +1,16 @@
 
 # python -m streamlit run Code/main.py
+import boto3
+from botocore.exceptions import ClientError
 from utils import st, os, json
 from config import save_path  # 移除 img_model, 改由 UI 動態取得
 from create_ppt import generate_ppt_from_report, generate_report
 from ppt_draw import create_node, generate_diagram_to_ppt
 from uploaded_file import process_uploaded_files
+from aws_utils import AWSManager
 
 def main():
+    aws_handler = AWSManager()
     st.title("AI Agent -- 簡報自動生成器")
 
     uploaded_files = st.file_uploader("**請上傳檔案 (支援pdf, ppt, word, 圖檔, mp3, mp4)**",
@@ -58,6 +62,21 @@ def main():
             st.success("已儲存設定!")
 
     if st.button("📥 產出簡報 PPT"):
+        # A. 上傳原始參考檔案到 S3 備份
+        with st.status("正在備份原始檔案至雲端...") as s3_status:
+            for uploaded_file in uploaded_files:
+                # 建立暫存檔以利上傳
+                temp_dir = "temp_uploads"
+                os.makedirs(temp_dir, exist_ok=True)
+                temp_path = os.path.join(temp_dir, uploaded_file.name)
+                with open(temp_path, "wb") as f:
+                    f.write(uploaded_file.getbuffer())
+                
+                object_name = f"uploads/{uploaded_file.name}"
+                if aws_handler.upload_file(temp_path, object_name):
+                    st.write(f"已備份: {uploaded_file.name}")
+            s3_status.update(label="原始檔案備份完成", state="complete")
+            
         with st.spinner("正在分析並產生報告..."):
             # 將 UI 選定的影像模型傳入
             all_texts = [t for t in process_uploaded_files(uploaded_files, selected_img_model) if t and t.strip()]
@@ -86,8 +105,17 @@ def main():
             st.markdown("**以下是 nodes 部分**")
             st.json(nodes)
             generate_diagram_to_ppt(save_path, status, nodes)
+            
+        # 上傳生成的 PPT 到 S3
+        with st.spinner("正在將產出的 PPT 上傳至雲端..."):
+            file_name = os.path.basename(save_path)
+            success = aws_handler.upload_file(save_path, f"generated_ppt/{file_name}")
+        
+        if success:
+            s3_url = aws_handler.get_download_url(f"generated_ppt/{file_name}")
+            st.success("AWS 雲端備份成功 ✅")
+            st.markdown(f"### [🔗 從AWS雲端上下載簡報]({s3_url})")
 
-        st.success(f"✅ 報表已儲存至：`{save_path}`")
         with open(save_path, "rb") as f:
             st.download_button("📥 下載PPT", f, file_name=os.path.basename(save_path))
         

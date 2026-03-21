@@ -359,29 +359,34 @@ def create_node(summary_text, model="gpt-oss:20b", temperature=0.7):
         }
     }
     
-    response = requests.post(
-        f"{ollama_url}/api/generate",
-        json=payload
-    )
+    response = requests.post(f"{ollama_url}/api/generate", json=payload)
 
     if response.status_code == 200:
-        node_data = response.json().get("response", "")
-        if node_data:
-            clean_node_data = node_data.replace("```json\n", "").replace("```", "").strip()
+        text = response.json().get("response", "")
+        if text:
+            # 1. 移除可能的 HTML/XML 標籤 (例如 DeepSeek 常見的 <think> 標籤)
+            text = re.sub(r"<.*?>", "", text, flags=re.DOTALL)
+            
+            # 2. 用正則表達式尋找最外層的 {}
+            m = re.search(r'(\{[\s\S]*\})', text)
+            json_str = m.group(1) if m else text
+            
             try:
-                nodes = json.loads(clean_node_data)
+                nodes = json.loads(json_str)
                 return nodes
             except json.JSONDecodeError:
-                print("Error: Failed to decode JSON from cleaned response.")
+                print("Error: JSON 解讀失敗，原始回傳內容為：", text)
                 return None
-        else:
-            print("Error: No response data found.")
-            return None
-    else:
-        print(f"Error: API request failed with status code {response.status_code}")
-        return None
+    return None
 
 def generate_diagram_to_ppt(save_path, st_status, node_data):
+    if not node_data:
+        msg = "⚠️ 節點資料為空或解析失敗，略過圖表生成。"
+        print(msg)
+        if st_status:
+            st_status.warning(msg)
+        return
+    
     print(node_data)
     msg = "📊 製作圖表中..."
     if st_status:
