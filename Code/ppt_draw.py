@@ -11,6 +11,7 @@ from math import cos, sin, pi
 from Set_Text import TextRunFactory
 from utils import textwrap, requests
 from config import ollama_url  # 移除 used_model
+import re
 
 
 
