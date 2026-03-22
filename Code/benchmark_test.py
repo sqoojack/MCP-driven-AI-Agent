@@ -30,11 +30,11 @@ def run_benchmark(iterations=50):
             result = create_ppt_from_text(
                 topic=f"Benchmark_Test_{i}",
                 content=test_content,
-                source_file_path="",  # 測試時不備份原始檔以節省時間
+                source_file_paths=[],  
                 num_pages=3,
                 level="專家",
                 language="繁體中文",
-                model_name="qwen2.5:7b", # 建議使用速度較快且穩定的模型進行測試
+                model_name="deepseek-r1:8b", 
                 temperature=0.1
             )
 
@@ -42,11 +42,11 @@ def run_benchmark(iterations=50):
             total_time += elapsed_time
 
             # 根據你 mcp_server.py 的回傳字串特徵來判斷成功與否
-            if "✅" in result:
+            if "生成成功" in result or "下載連結" in result:
                 success_count += 1
                 print(f" [成功] (耗時: {elapsed_time:.2f} 秒)")
             else:
-                print(f" [失敗] (耗時: {elapsed_time:.2f} 秒)")
+                print(f" [失敗] (耗時: {elapsed_time:.2f} 秒)\n  >> 實際錯誤回傳: {result}")
                 failed_logs.append(f"第 {i} 次失敗原因: {result.splitlines()[0]}")
 
         except Exception as e:

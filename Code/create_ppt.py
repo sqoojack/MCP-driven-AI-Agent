@@ -73,8 +73,8 @@ def call_llm_summary(all_summaries_text, num_pages=5, level="專家", language="
     response = requests.post(f"{ollama_url}/api/generate", json=payload)
     text = response.json().get("response", "").strip()
 
-    print("===== 第二層回應原始內容 =====")
-    print(text)
+    # print("===== 第二層回應原始內容 =====")
+    # print(text)
 
     text = re.sub(r"<.*?>", "", text)   # 移除可能殘留的 HTML 標籤（如 <p>、<think>）
 
