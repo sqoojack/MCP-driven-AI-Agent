@@ -10,7 +10,7 @@ from aws_utils import AWSManager
 
 def main():
     aws_handler = AWSManager()
-    st.title("MCP-driven AI Agent - PPT Generator")
+    st.title("MCP-driven AI Agent 🤖 - PPT Generator")
 
     uploaded_files = st.file_uploader(
         "**Upload Files (Supported: PDF, PPT, Word, Images, MP3, MP4)**",
@@ -102,7 +102,8 @@ def main():
 
             nodes = create_node(
                 json.dumps(structure, ensure_ascii=False),
-                model=selected_text_model, 
+                language=language,
+                model=selected_text_model,
                 temperature=temperature
             )
             st.markdown("**Generated Nodes:**")

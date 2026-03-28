@@ -317,10 +317,10 @@ def detect_layout_types(nodes):
     return []
 
 # 修正：加入 model 與 temperature 參數
-def create_node(summary_text, model="gpt-oss:20b", temperature=0.7):
+def create_node(summary_text, language, model="gpt-oss:20b", temperature=0.7):
     prompt = textwrap.dedent(f"""
     請根據以下的格式，萃取出其中的主要流程或架構，並將其拆解為結構化的節點信息。每個節點應該包含以下欄位：
-    - **id**: 節點的唯一識別字串，這將是該節點的顯示文字（不重複，適當時可以使用中文）。
+    - **id**: 節點的唯一識別字串，這將是該節點的顯示文字
     - **add**: 此節點的簡要說明, 最多不超過20字。
     - **next**: 這是一個列表，包含當前節點的指向節點（即後續步驟）。如果此節點是流程的最終步驟，則設為空列表 []。
     - **icon**: 這是與節點相關的 Unicode 表情符號，用來表示該節點的象徵意圖或功能。
@@ -329,6 +329,7 @@ def create_node(summary_text, model="gpt-oss:20b", temperature=0.7):
     - 若無明確結構或層級，請合理推測分層並找出關聯性。
     - 根據流程描述，拆解成 2 到 4 個主要節點，並在這些節點之間建立「下一步」的關聯。
     - 保證每個節點都包含以上所列的欄位。
+    - 必須用以下語言生出節點 {language}
 
     ### 範例：
     {{
@@ -382,14 +383,14 @@ def create_node(summary_text, model="gpt-oss:20b", temperature=0.7):
 
 def generate_diagram_to_ppt(save_path, st_status, node_data):
     if not node_data:
-        msg = "⚠️ 節點資料為空或解析失敗，略過圖表生成。"
+        msg = "⚠️ node data parsing failed, passed the diagram stage"
         print(msg)
         if st_status:
             st_status.warning(msg)
         return
     
     print(node_data)
-    msg = "📊 製作圖表中..."
+    msg = "📊 Generating diagram..."
     if st_status:
         st_status.info(msg)
 
@@ -400,10 +401,10 @@ def generate_diagram_to_ppt(save_path, st_status, node_data):
     layout_types = detect_layout_types(nodes)
     for layout in layout_types:
         create_slide(prs, nodes, layout, layout)
-    create_list_slide(prs, nodes, "清單圖")
-    create_cycle_slide(prs, nodes, "循環圖")
+    create_list_slide(prs, nodes, "List Diagram")
+    create_cycle_slide(prs, nodes, "Cycle Diagram")
 
-    msg = "📊 製作完成!"
+    msg = "📊 Complete!"
     if st_status:
         st_status.info(msg)
     prs.save(save_path)      # 儲存為 PPT 檔案

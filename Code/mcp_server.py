@@ -71,6 +71,7 @@ def create_ppt_from_text(
             
             nodes = create_node(
                 json.dumps(structure_json, ensure_ascii=False),
+                language=language,
                 model=model_name, 
                 temperature=0.7
             )
