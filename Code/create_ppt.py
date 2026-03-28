@@ -94,7 +94,7 @@ def generate_report(all_texts, st_status, num_pages, level, language, model="gpt
     summaries = []
     # 第一階段：分析每個檔案
     for i, content in enumerate(all_texts):
-        msg = f"▶ 分析第 {i+1} 個檔案中 (使用模型: {model})..."
+        msg = f"▶ Analyzing file {i+1}... (Model: {model})"
         if st_status:
             st_status.info(msg)
         
@@ -105,7 +105,7 @@ def generate_report(all_texts, st_status, num_pages, level, language, model="gpt
     summary_text = "\n\n---\n\n".join(summaries)
 
     # 第二階段：彙整簡報
-    msg = f"📊 正在彙整簡報結構 (使用模型: {model})..."
+    msg = f"📊 Synthesizing PPT structure... (Model: {model})"
     if st_status:
         st_status.info(msg)
         
@@ -120,7 +120,7 @@ def generate_report(all_texts, st_status, num_pages, level, language, model="gpt
     )
 
     if st_status:
-        st_status.info("📊 彙整完成!")
+        st_status.info("📊 Synthesis Completed!")
     return structure
 
 # 　把簡報 JSON 結構轉為真正的 .pptx 簡報
