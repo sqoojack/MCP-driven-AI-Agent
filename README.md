@@ -43,7 +43,7 @@ Create a `.env` file in the root directory and provide your AWS credentials:
 ```env
 AWS_ACCESS_KEY_ID=your_access_key_id
 AWS_SECRET_ACCESS_KEY=your_secret_access_key
-S3_BUCKET_NAME=your_bucket_name
+AWS_BUCKET_NAME=your_bucket_name
 ```
 *Note: Ensure the IAM user has `S3:PutObject` and `S3:GetObject` permissions.*
 
