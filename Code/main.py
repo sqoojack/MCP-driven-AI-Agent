@@ -87,7 +87,7 @@ def render_settings(memory: JsonMemory) -> dict[str, Any]:
             temperature = st.slider("Temperature", 0.0, 1.0, float(prefs.get("temperature", 0.7)), 0.01)
 
         enable_diagrams = st.toggle("Generate diagrams", value=True)
-        upload_to_s3 = st.toggle("Upload to S3", value=True)
+        upload_to_s3 = st.toggle("Upload to AWS S3", value=True)
 
     return {
         "topic": topic,
